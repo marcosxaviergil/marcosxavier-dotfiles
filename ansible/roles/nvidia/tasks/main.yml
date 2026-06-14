@@ -1,0 +1,53 @@
+---
+# Driver NVIDIA 550.163.01 do repositório Debian Trixie non-free (flavor proprietária).
+# Mesmo pacote instalado no Xavier-PC original.
+# O debconf-show no Xavier-PC revelou duas perguntas interativas:
+#   - nvidia-support/warn-nouveau-module-loaded (aparece se nouveau estiver ativo)
+#   - nvidia-support/warn-mismatching-module-version (aparece se versão do módulo divergir)
+# Pré-seedamos ambas como false para suprimir o diálogo interativo.
+
+- name: Instalar linux-headers e dkms (obrigatório para DKMS compilar o módulo)
+  ansible.builtin.apt:
+    name:
+      - linux-headers-amd64
+      - dkms
+    state: present
+
+- name: Pré-configurar debconf nvidia-support (suprimir avisos interativos)
+  ansible.builtin.debconf:
+    name: nvidia-support
+    question: "{{ item.question }}"
+    value: "{{ item.value }}"
+    vtype: boolean
+  loop:
+    - question: nvidia-support/warn-nouveau-module-loaded
+      value: "false"
+    - question: nvidia-support/warn-mismatching-module-version
+      value: "false"
+    - question: nvidia-support/check-running-module-version
+      value: "true"
+    - question: nvidia-support/check-xorg-conf-on-removal
+      value: "true"
+
+- name: Instalar driver NVIDIA proprietário do repositório Debian Trixie non-free
+  ansible.builtin.apt:
+    name:
+      - nvidia-kernel-dkms
+      - nvidia-driver
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Blacklist Nouveau
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-nouveau.conf
+    content: |
+      blacklist nouveau
+      options nouveau modeset=0
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Atualizar initramfs
+  ansible.builtin.command: update-initramfs -u
+  changed_when: true

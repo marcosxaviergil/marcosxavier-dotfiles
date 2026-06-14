@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  become: true
+  roles:
+    - system
+    - base
+    - packages
+    - debs
+    - flatpak
+    - bluetooth
+    - nvidia
+    - gnome
+    - rede

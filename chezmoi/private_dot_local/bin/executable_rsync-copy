@@ -1,0 +1,2 @@
+#!/bin/bash
+rsync -avh --progress --partial --append-verify "$1" "$2"

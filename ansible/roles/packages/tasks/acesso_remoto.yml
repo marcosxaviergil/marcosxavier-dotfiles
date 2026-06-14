@@ -1,0 +1,11 @@
+---
+- name: Instalar pacotes de acesso remoto
+  apt:
+    name:
+      - xrdp
+      - xorgxrdp
+      - remmina
+      - freerdp3-x11
+      - x11vnc
+      - tigervnc-viewer
+    state: present

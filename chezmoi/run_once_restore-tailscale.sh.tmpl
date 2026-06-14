@@ -1,0 +1,9 @@
+{{- if env "BW_SESSION" -}}
+#!/bin/bash
+sudo mkdir -p /var/lib/tailscale
+sudo tee /var/lib/tailscale/tailscaled.state > /dev/null << 'TAILSCALE'
+{{/* (bitwarden "item" "tailscale-state-xavier-pc").notes */}}
+TAILSCALE
+sudo chmod 600 /var/lib/tailscale/tailscaled.state
+sudo chown root:root /var/lib/tailscale/tailscaled.state
+{{- end -}}

@@ -1,0 +1,7 @@
+%YAML 1.3
+---
+- MouseGesture: unknown:01A0
+- KeyPress:
+  - [Control_L, space]
+  - click
+...

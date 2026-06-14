@@ -1,0 +1,59 @@
+- name: Instalar pré-requisitos de rede e apt
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - wget
+      - sudo
+    state: present
+
+- name: Instalar ambiente gráfico GNOME
+  ansible.builtin.apt:
+    name:
+      - xorg
+      - gdm3
+      - gnome-shell
+      - gnome-session
+      - gnome-tweaks
+      - gnome-software
+      - gnome-software-plugin-flatpak
+      - gnome-shell-extension-manager
+      - network-manager
+      - network-manager-gnome
+      - gir1.2-gmenu-3.0
+    state: present
+
+- name: Criar diretórios do usuário
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: marcosxavier
+    group: marcosxavier
+    mode: '0755'
+  loop:
+    - /home/marcosxavier/Scripts
+    - /home/marcosxavier/Applications
+    - /home/marcosxavier/Documentos
+    - /home/marcosxavier/Imagens
+    - /home/marcosxavier/Downloads
+
+- name: Habilitar timer state-push do usuário
+  become: false
+  ansible.builtin.systemd:
+    name: state-push.timer
+    scope: user
+    enabled: true
+    state: started
+  register: state_push_timer
+  failed_when: false
+
+- name: Confirmar estado do timer state-push
+  become: false
+  ansible.builtin.command: systemctl --user is-active state-push.timer
+  register: timer_status
+  changed_when: false
+  failed_when: false
+
+- name: Exibir estado do timer state-push
+  ansible.builtin.debug:
+    msg: "state-push.timer: {{ timer_status.stdout | default('não encontrado') }}"

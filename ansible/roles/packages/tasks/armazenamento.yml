@@ -1,0 +1,13 @@
+---
+- name: Instalar pacotes de armazenamento
+  apt:
+    name:
+      - ntfs-3g
+      - nfs-common
+      - gparted
+      - smartmontools
+      - nvme-cli
+      - dosfstools
+      - duf
+      - pv
+    state: present

@@ -1,0 +1,23 @@
+---
+- name: Instalar bluez
+  apt:
+    name: bluez
+    state: present
+
+- name: Regra udev UGREEN BT
+  copy:
+    src: 99-ugreen-bt.rules
+    dest: /etc/udev/rules.d/99-ugreen-bt.rules
+
+- name: Desativar autosuspend btusb
+  copy:
+    src: btusb.conf
+    dest: /etc/modprobe.d/btusb.conf
+
+- name: Configurar input.conf do bluetooth
+  copy:
+    src: input.conf
+    dest: /etc/bluetooth/input.conf
+
+- name: Reload udev
+  command: udevadm control --reload-rules

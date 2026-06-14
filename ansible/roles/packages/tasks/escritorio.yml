@@ -1,0 +1,38 @@
+---
+- name: Instalar pacotes de escritório
+  apt:
+    name:
+      - libreoffice
+      - thunderbird
+      - gimp
+      - transmission
+      - foliate
+      - yt-dlp
+      - mkvtoolnix
+      - mkvtoolnix-gui
+      - copyq
+      - albert
+    state: present
+
+- name: Instalar utilitários de arquivo e clipboard
+  apt:
+    name:
+      - doublecmd-gtk
+      - filezilla
+      - mc
+    state: present
+
+- name: Instalar apps de escritório adicionais
+  apt:
+    name:
+      - chromium
+      - chromium-l10n
+      - mariadb-client
+      - postgresql-client
+      - kate
+      - imagemagick
+      - guvcview
+      - cheese
+      - ultracopier
+      - papers
+    state: present

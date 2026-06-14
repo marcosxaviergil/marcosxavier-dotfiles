@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Albert
+Comment=Iniciar Albert no login
+Exec=/usr/bin/albert
+Terminal=false
+X-GNOME-Autostart-enabled=true

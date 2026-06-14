@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer do state-push — 20min após boot, verifica internamente se já faz 7 dias
+
+[Timer]
+OnBootSec=20min
+Persistent=true
+Unit=state-push.service
+
+[Install]
+WantedBy=timers.target

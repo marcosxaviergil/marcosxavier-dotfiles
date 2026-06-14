@@ -1,0 +1,49 @@
+#!/bin/bash
+# state-push — re-add, commit local e push sem histórico para GitHub e Forgejo
+# Uso exclusivamente manual: state-push [mensagem opcional]
+
+set -uo pipefail
+
+WORK_TREE="$(chezmoi dump-config 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['workingTree'])")"
+MSG="${1:-dotfiles $(date '+%Y-%m-%d %H:%M')}"
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+log "===== state-push iniciado (msg: $MSG) ====="
+
+log "[1/5] chezmoi re-add..."
+chezmoi re-add \
+    && log "      OK" \
+    || { log "      ERRO: chezmoi re-add falhou"; exit 1; }
+
+cd "$WORK_TREE"
+
+log "[2/5] git add + commit local..."
+git add -A
+if git diff --cached --quiet; then
+    log "      sem alterações para commitar"
+else
+    git commit -m "$MSG" \
+        && log "      OK: $MSG" \
+        || { log "      ERRO: commit falhou"; exit 1; }
+fi
+
+log "[3/5] criando branch órfã sem histórico..."
+git checkout --orphan _push_tmp \
+    && log "      OK" \
+    || { log "      ERRO: checkout --orphan falhou"; exit 1; }
+git add -A
+git commit -m "$MSG" \
+    && log "      OK: commit único criado" \
+    || { log "      ERRO: commit órfão falhou"; exit 1; }
+git branch -D master && git branch -m master \
+    && log "      OK: master substituído" \
+    || { log "      ERRO: rename do branch falhou"; exit 1; }
+
+log "[4/5] push para GitHub e Forgejo..."
+git push --force origin master \
+    && log "      OK: GitHub + Forgejo" \
+    || log "      ERRO: push falhou (ver mensagem acima)"
+
+log "[5/5] concluído"
+git log --oneline -2

@@ -1,0 +1,23 @@
+.config/obs-studio/logs
+.config/obs-studio/profiler_data
+.config/obsidian
+.config/kando/session
+.config/sunshine
+.config/opendeck
+.config/transmission/resume
+.config/transmission/stats.json
+.config/transmission/torrents
+.var/app/com.spotify.Client/config/spotify/Users
+{{- /* Secrets do Bitwarden: so aplicados quando BW_SESSION estiver exportado. */}}
+{{- /* Uso normal (sem a variavel): ignorados, sem atrito. */}}
+{{- /* Para atualizar os secrets: export BW_SESSION=$(bw unlock --raw) && chezmoi apply */}}
+{{- if not (env "BW_SESSION") }}
+.ssh/forgejo
+.ssh/SeTIC
+.config/remmina/remmina.pref
+.config/obs-studio/plugin_config/obs-websocket/config.json
+.var/app/com.spotify.Client/config/spotify/prefs
+run_once_restore-tailscale.sh
+{{- end }}
+# Arquivos temporários de runtime do Kando (Electron singleton)
+.config/kando/Singleton*

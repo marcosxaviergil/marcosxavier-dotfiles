@@ -1,0 +1,7 @@
+---
+- name: Instalar pacotes de virtualização
+  apt:
+    name:
+      - virtualbox-7.2
+      - dkms
+    state: present

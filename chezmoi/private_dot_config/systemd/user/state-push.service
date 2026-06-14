@@ -1,0 +1,10 @@
+[Unit]
+Description=state-commit — re-add e commit local semanal dos dotfiles
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/state-commit
+StandardOutput=journal
+StandardError=journal
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%h/.local/bin

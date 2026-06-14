@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+set -u
+
+if [ "$#" -lt 1 ]; then
+  zenity --error --title="Cópia avançada" --text="Nenhum arquivo ou pasta recebido do Nautilus."
+  exit 1
+fi
+
+DESTINO="$(zenity --file-selection --directory --title="Escolha a pasta de destino")" || exit 0
+
+MODO="$(zenity --list --radiolist \
+  --title="Cópia avançada" \
+  --width=760 \
+  --height=420 \
+  --text="Escolha como tratar arquivos/pastas com o mesmo nome:" \
+  --column="" --column="Modo" --column="Descrição" \
+  TRUE  "newer"  "Sobrescrever somente se a origem for mais nova" \
+  FALSE "overwrite" "Sobrescrever sempre" \
+  FALSE "skip" "Pular arquivos existentes" \
+  FALSE "rename" "Manter ambos, renomeando a cópia" \
+  FALSE "backup" "Sobrescrever, mas manter backup do antigo" \
+  FALSE "larger" "Sobrescrever somente se a origem for maior" \
+  FALSE "smaller" "Sobrescrever somente se a origem for menor")" || exit 0
+
+LOG="$(mktemp)"
+trap 'rm -f "$LOG"' EXIT
+
+nome_livre() {
+  local alvo="$1"
+  local dir base nome ext candidato n
+
+  dir="$(dirname -- "$alvo")"
+  base="$(basename -- "$alvo")"
+
+  if [[ "$base" == *.* && ! -d "$alvo" ]]; then
+    nome="${base%.*}"
+    ext=".${base##*.}"
+  else
+    nome="$base"
+    ext=""
+  fi
+
+  candidato="$dir/$nome - cópia$ext"
+  n=2
+
+  while [ -e "$candidato" ]; do
+    candidato="$dir/$nome - cópia $n$ext"
+    n=$((n+1))
+  done
+
+  printf '%s\n' "$candidato"
+}
+
+copia_por_tamanho_arquivo() {
+  local src="$1"
+  local dst="$2"
+  local modo="$3"
+
+  if [ ! -e "$dst" ]; then
+    rsync -a -- "$src" "$dst"
+    echo "NOVO: $src -> $dst" >> "$LOG"
+    return
+  fi
+
+  if [ ! -f "$src" ] || [ ! -f "$dst" ]; then
+    echo "PULADO, não é arquivo regular: $src" >> "$LOG"
+    return
+  fi
+
+  local s_src s_dst
+  s_src="$(stat -c '%s' -- "$src")"
+  s_dst="$(stat -c '%s' -- "$dst")"
+
+  if [ "$modo" = "larger" ] && [ "$s_src" -gt "$s_dst" ]; then
+    rsync -a -- "$src" "$dst"
+    echo "MAIOR, sobrescrito: $src -> $dst" >> "$LOG"
+  elif [ "$modo" = "smaller" ] && [ "$s_src" -lt "$s_dst" ]; then
+    rsync -a -- "$src" "$dst"
+    echo "MENOR, sobrescrito: $src -> $dst" >> "$LOG"
+  else
+    echo "PULADO por tamanho: $src" >> "$LOG"
+  fi
+}
+
+copia_por_tamanho_pasta() {
+  local srcdir="$1"
+  local dstdir="$2"
+  local modo="$3"
+
+  mkdir -p -- "$dstdir"
+
+  while IFS= read -r -d '' dir; do
+    rel="${dir#$srcdir/}"
+    [ "$rel" = "$dir" ] && continue
+    mkdir -p -- "$dstdir/$rel"
+  done < <(find "$srcdir" -type d -print0)
+
+  while IFS= read -r -d '' item; do
+    rel="${item#$srcdir/}"
+    dst="$dstdir/$rel"
+
+    if [ -f "$item" ]; then
+      mkdir -p -- "$(dirname -- "$dst")"
+      copia_por_tamanho_arquivo "$item" "$dst" "$modo"
+    elif [ -L "$item" ] && [ ! -e "$dst" ]; then
+      mkdir -p -- "$(dirname -- "$dst")"
+      rsync -a -- "$item" "$dst"
+      echo "LINK NOVO: $item -> $dst" >> "$LOG"
+    fi
+  done < <(find "$srcdir" \( -type f -o -type l \) -print0)
+}
+
+copiar_item() {
+  local src="$1"
+  local base destino_item novo
+
+  base="$(basename -- "$src")"
+  destino_item="$DESTINO/$base"
+
+  case "$MODO" in
+    overwrite)
+      rsync -a --info=progress2 -- "$src" "$DESTINO/" >> "$LOG" 2>&1
+      ;;
+
+    newer)
+      rsync -a --update --info=progress2 -- "$src" "$DESTINO/" >> "$LOG" 2>&1
+      ;;
+
+    skip)
+      rsync -a --ignore-existing --info=progress2 -- "$src" "$DESTINO/" >> "$LOG" 2>&1
+      ;;
+
+    backup)
+      rsync -a --backup --suffix=".backup-$(date +%Y%m%d-%H%M%S)" --info=progress2 -- "$src" "$DESTINO/" >> "$LOG" 2>&1
+      ;;
+
+    rename)
+      if [ -e "$destino_item" ]; then
+        novo="$(nome_livre "$destino_item")"
+
+        if [ -d "$src" ]; then
+          mkdir -p -- "$novo"
+          rsync -a --info=progress2 -- "$src"/ "$novo"/ >> "$LOG" 2>&1
+        else
+          rsync -a --info=progress2 -- "$src" "$novo" >> "$LOG" 2>&1
+        fi
+
+        echo "RENOMEADO: $src -> $novo" >> "$LOG"
+      else
+        rsync -a --info=progress2 -- "$src" "$DESTINO/" >> "$LOG" 2>&1
+      fi
+      ;;
+
+    larger|smaller)
+      if [ -d "$src" ]; then
+        copia_por_tamanho_pasta "$src" "$destino_item" "$MODO"
+      else
+        copia_por_tamanho_arquivo "$src" "$destino_item" "$MODO"
+      fi
+      ;;
+  esac
+}
+
+(
+  total="$#"
+  atual=0
+
+  for item in "$@"; do
+    atual=$((atual+1))
+    echo "# Copiando $atual de $total: $(basename -- "$item")"
+    copiar_item "$item"
+  done
+
+  echo "# Finalizando..."
+) | zenity --progress \
+    --title="Cópia avançada" \
+    --text="Copiando..." \
+    --pulsate \
+    --auto-close \
+    --width=520
+
+STATUS=${PIPESTATUS[0]}
+
+if [ "$STATUS" -eq 0 ]; then
+  zenity --info \
+    --title="Cópia avançada" \
+    --width=700 \
+    --height=400 \
+    --text="Cópia concluída para:\n$DESTINO" \
+    --extra-button="Ver log" \
+    --ok-label="Fechar"
+
+  if [ "$?" -eq 1 ]; then
+    zenity --text-info --title="Log da cópia" --width=900 --height=600 --filename="$LOG"
+  fi
+else
+  zenity --error \
+    --title="Cópia avançada" \
+    --text="A cópia terminou com erro. Veja o log."
+
+  zenity --text-info --title="Log da cópia" --width=900 --height=600 --filename="$LOG"
+fi

@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="33fa", ATTRS{idProduct}=="0010", RUN+="/bin/sh -c 'echo 33fa 0010 > /sys/bus/usb/drivers/btusb/new_id'"

@@ -1,0 +1,37 @@
+---
+- name: Instalar pacotes de desenvolvimento
+  apt:
+    name:
+      - git
+      - build-essential
+      - cmake
+      - meson
+      - ninja-build
+      - nodejs
+      - npm
+      - python3
+      - python3-pip
+      - python3-venv
+      - pipx
+      - python-is-python3
+      - rustc
+      - cargo
+      - ansible
+      - pkg-config
+      - make
+      - autoconf
+      - automake
+      - libicu-dev
+      - python3-icu
+    state: present
+
+- name: Instalar bitwarden CLI via npm
+  community.general.npm:
+    name: "@bitwarden/cli"
+    version: "2026.1.0"
+    global: true
+    state: present
+
+- name: Instalar comictagger via pipx
+  command: pipx install comictagger
+  become: false

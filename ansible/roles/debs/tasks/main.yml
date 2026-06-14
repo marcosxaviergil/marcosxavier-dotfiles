@@ -1,0 +1,93 @@
+---
+- name: Criar diretório temporário para debs
+  ansible.builtin.file:
+    path: /tmp/debs
+    state: directory
+    mode: "0755"
+
+- name: Baixar debs
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "/tmp/debs/{{ item.name }}.deb"
+    mode: "0644"
+  loop:
+    - name: discord
+      url: https://discord.com/api/download?platform=linux&format=deb
+    - name: rocketchat
+      url: https://github.com/RocketChat/Rocket.Chat.Electron/releases/latest/download/rocketchat-4.14.1-linux-amd64.deb
+    - name: dbeaver-ce
+      url: https://github.com/dbeaver/dbeaver/releases/latest/download/dbeaver-ce-26.1.0-linux-x86_64.deb
+    - name: naps2
+      url: https://github.com/cyanfish/naps2/releases/latest/download/naps2-8.2.1-linux-x64.deb
+    - name: obsidian
+      url: https://github.com/obsidianmd/obsidian-releases/releases/latest/download/obsidian_1.12.7_amd64.deb
+    - name: kando
+      url: https://github.com/kando-menu/kando/releases/latest/download/kando_2.3.1_amd64.deb
+    - name: openrgb
+      url: https://codeberg.org/OpenRGB/OpenRGB/releases/download/release_candidate_1.0rc2/openrgb_1.0rc2_amd64_trixie_0fca93e.deb
+    - name: aspia-client
+      url: https://github.com/dchapyshev/aspia/releases/latest/download/aspia-client-2.7.0-x86_64.deb
+    - name: ipscan
+      url: https://github.com/angryip/ipscan/releases/download/3.9.3/ipscan_3.9.3_amd64.deb
+    - name: bitwarden
+      url: https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb
+
+- name: Instalar debs
+  ansible.builtin.apt:
+    deb: "/tmp/debs/{{ item }}.deb"
+  loop:
+    - discord
+    - rocketchat
+    - dbeaver-ce
+    - naps2
+    - obsidian
+    - kando
+    - aspia-client
+    - ipscan
+    - bitwarden
+
+- name: Instalar dpkg-dev (necessário para reempacotar o openrgb)
+  ansible.builtin.apt:
+    name: dpkg-dev
+    state: present
+
+# O .deb trixie do OpenRGB rc2 declara dependência de libmbedcrypto7 (bookworm),
+# que no Trixie foi renomeada para libmbedcrypto16 (mbedtls 3.x).
+# Reempacotamos o .deb corrigindo as três dependências afetadas.
+- name: Reempacotar openrgb corrigindo dependências para trixie
+  ansible.builtin.shell:
+    cmd: |
+      WORKDIR=$(mktemp -d)
+      dpkg-deb -R /tmp/debs/openrgb.deb "$WORKDIR"
+      sed -i \
+        -e 's/libmbedcrypto7 (>= 2\.28\.0)/libmbedcrypto16/g' \
+        -e 's/libmbedtls14 (>= 2\.28\.0)/libmbedtls21/g' \
+        -e 's/libmbedx509-1 (>= 2\.28\.0)/libmbedx509-7/g' \
+        "$WORKDIR/DEBIAN/control"
+      dpkg-deb -b "$WORKDIR" /tmp/debs/openrgb-fixed.deb
+      rm -rf "$WORKDIR"
+    creates: /tmp/debs/openrgb-fixed.deb
+
+- name: Instalar openrgb reempacotado
+  ansible.builtin.apt:
+    deb: /tmp/debs/openrgb-fixed.deb
+
+- name: Instalar hadolint
+  ansible.builtin.get_url:
+    url: https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+    dest: /usr/local/bin/hadolint
+    mode: "0755"
+
+- name: Instalar lazydocker
+  ansible.builtin.shell:
+    cmd: |
+      LAZY_TAG_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/jesseduffield/lazydocker/releases/latest)"
+      LAZY_TAG="${LAZY_TAG_URL##*/}"
+      LAZY_VER="${LAZY_TAG#v}"
+      TMPDIR="$(mktemp -d)"
+      curl -fsSL "https://github.com/jesseduffield/lazydocker/releases/download/${LAZY_TAG}/lazydocker_${LAZY_VER}_Linux_x86_64.tar.gz" \
+        -o "$TMPDIR/lazydocker.tgz"
+      tar -xzf "$TMPDIR/lazydocker.tgz" -C "$TMPDIR"
+      install -m 0755 "$TMPDIR/lazydocker" /usr/local/bin/lazydocker
+      rm -rf "$TMPDIR"
+    creates: /usr/local/bin/lazydocker

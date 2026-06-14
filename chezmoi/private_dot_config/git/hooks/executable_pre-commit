@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$ROOT" ]] || exit 0
+# Se o projeto fornecer CI local, roda (independente de GitLab CI)
+if [[ -x "$ROOT/ci-local.sh" ]]; then
+  echo "[pre-commit] Rodando CI local: ./ci-local.sh"
+  (cd "$ROOT" && ./ci-local.sh)
+  exit 0
+fi
+# Se existir .gitlab-ci.yml mas não existe CI local, avisa
+if [[ -f "$ROOT/.gitlab-ci.yml" ]]; then
+  echo "[pre-commit] (INFO) .gitlab-ci.yml encontrado, mas não há ci-local.sh executável."
+  echo "[pre-commit] (INFO) Sugestão: crie um ci-local.sh ou Makefile/justfile com alvo 'ci'."
+fi
+# Sem CI definido: não bloqueia
+exit 0

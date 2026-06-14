@@ -1,0 +1,28 @@
+---
+- name: Instalar pacotes de desktop
+  ansible.builtin.apt:
+    name:
+      - gnome-shell
+      - gdm3
+      - flatpak
+      - flatseal
+      - dconf-editor
+      - gnome-software-plugin-flatpak
+      - xdg-desktop-portal
+      - xdg-desktop-portal-gnome
+      - xdg-desktop-portal-gtk
+      - python3-nautilus
+      - code
+    state: present
+
+- name: Instalar fontes
+  apt:
+    name:
+      - fonts-jetbrains-mono
+      - fonts-inter
+      - fonts-noto
+      - fonts-noto-color-emoji
+      - fonts-cantarell
+      - fonts-liberation
+      - fonts-dejavu
+    state: present

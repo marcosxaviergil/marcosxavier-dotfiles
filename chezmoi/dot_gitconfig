@@ -1,0 +1,9 @@
+[http]
+	lowSpeedLimit = 1000
+	lowSpeedTime = 60
+	postBuffer = 524288000
+[user]
+	name = marcosxavier
+	email = marcosxaviergiljr@gmail.com
+[core]
+	hooksPath = /home/marcosxavier/.config/git/hooks

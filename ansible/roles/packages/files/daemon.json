@@ -1,0 +1,4 @@
+{
+  "insecure-registries": ["forgejo.canal52.ddns.net", "forgejo.canal52.xavier"],
+  "dns": ["172.17.0.1", "1.1.1.1", "8.8.8.8"]
+}

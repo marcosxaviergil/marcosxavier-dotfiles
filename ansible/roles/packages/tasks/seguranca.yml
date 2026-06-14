@@ -1,0 +1,10 @@
+---
+- name: Instalar pacotes de segurança
+  apt:
+    name:
+      - gnupg
+      - gpg
+      - openssl-provider-legacy
+      - ca-certificates
+      - sqv
+    state: present

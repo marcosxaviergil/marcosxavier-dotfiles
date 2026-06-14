@@ -1,0 +1,26 @@
+[global_config]
+  ask_before_closing = never
+[keybindings]
+[profiles]
+  [[default]]
+    background_darkness = 0.95
+    background_type = transparent
+    foreground_color = "#e53c00"
+    scrollback_lines = 4000
+    scrollback_infinite = True
+    palette = "#fbf1c7:#cc241d:#98971a:#d79921:#458588:#b16286:#689d6a:#7c6f64:#928374:#9d0006:#79740e:#b57614:#076678:#8f3f71:#427b58:#3c3836"
+    title_transmit_fg_color = "#000000"
+    title_transmit_bg_color = "#ff7800"
+    title_receive_fg_color = "#000000"
+    title_receive_bg_color = "#deddda"
+    title_inactive_fg_color = "#ffa348"
+    title_inactive_bg_color = "#deddda"
+[layouts]
+  [[default]]
+    [[[window0]]]
+      type = Window
+      parent = ""
+    [[[child1]]]
+      type = Terminal
+      parent = window0
+[plugins]

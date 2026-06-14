@@ -1,0 +1,204 @@
+---
+- name: Garantir que /etc/udisks2 existe
+  ansible.builtin.file:
+    path: /etc/udisks2
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Instalar udisks2 mount_options.conf
+  ansible.builtin.copy:
+    src: udisks2/mount_options.conf
+    dest: /etc/udisks2/mount_options.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Garantir que /etc/gdm3 existe
+  ansible.builtin.file:
+    path: /etc/gdm3
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configurar GDM3
+  ansible.builtin.copy:
+    src: gdm3/daemon.conf
+    dest: /etc/gdm3/daemon.conf
+
+- name: Instalar logiops config
+  ansible.builtin.copy:
+    src: logid.cfg
+    dest: /etc/logid.cfg
+
+- name: Garantir que /usr/share/polkit-1/rules.d existe
+  ansible.builtin.file:
+    path: /usr/share/polkit-1/rules.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Instalar polkit xrdp-colord
+  ansible.builtin.copy:
+    src: polkit/xrdp-colord.rules
+    dest: /usr/share/polkit-1/rules.d/xrdp-colord.rules
+
+- name: Instalar sources.list base (com contrib/non-free)
+  ansible.builtin.copy:
+    src: apt/sources.list
+    dest: /etc/apt/sources.list
+
+- name: Habilitar arquitetura i386 (necessario para Steam)
+  ansible.builtin.command: dpkg --add-architecture i386
+  changed_when: false
+
+- name: Garantir diretórios apt existem
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/apt/sources.list.d
+    - /etc/apt/keyrings
+    - /usr/share/keyrings
+    - /etc/apt/trusted.gpg.d
+
+- name: Instalar repositórios apt
+  ansible.builtin.copy:
+    src: "apt/sources.list.d/"
+    dest: "/etc/apt/sources.list.d/"
+
+- name: Instalar GPG keys apt (/etc/apt/keyrings)
+  ansible.builtin.copy:
+    src: "apt/keyrings/"
+    dest: "/etc/apt/keyrings/"
+    mode: "0644"
+
+- name: Instalar GPG keys apt (/usr/share/keyrings)
+  ansible.builtin.copy:
+    src: "usr-share-keyrings/"
+    dest: "/usr/share/keyrings/"
+    mode: "0644"
+
+- name: Instalar GPG keys apt (/etc/apt/trusted.gpg.d)
+  ansible.builtin.copy:
+    src: "trusted-gpg-d/"
+    dest: "/etc/apt/trusted.gpg.d/"
+    mode: "0644"
+
+- name: Atualizar cache apt após configurar repositórios e GPG keys
+  ansible.builtin.apt:
+    update_cache: true
+  changed_when: false
+
+- name: Reload udev
+  ansible.builtin.command: udevadm control --reload-rules
+  changed_when: false
+
+- name: Criar diretório resolved.conf.d
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configurar DNS global do systemd-resolved (fallback garantido)
+  ansible.builtin.copy:
+    src: systemd/resolved.conf.d/dns.conf
+    dest: /etc/systemd/resolved.conf.d/dns.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Garantir diretórios do NetworkManager existem
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/NetworkManager
+    - /etc/NetworkManager/conf.d
+
+- name: Copiar NetworkManager.conf base
+  ansible.builtin.copy:
+    src: NetworkManager/NetworkManager.conf
+    dest: /etc/NetworkManager/NetworkManager.conf
+
+- name: Copiar conf.d do NetworkManager
+  ansible.builtin.copy:
+    src: NetworkManager/conf.d/
+    dest: /etc/NetworkManager/conf.d/
+
+- name: Verificar se NetworkManager está disponível
+  ansible.builtin.command: systemctl cat NetworkManager
+  register: nm_check
+  changed_when: false
+  failed_when: false
+
+- name: Reiniciar NetworkManager (se disponível)
+  ansible.builtin.systemd:
+    name: NetworkManager
+    state: restarted
+  when: nm_check.rc == 0
+
+- name: Verificar se systemd-resolved está disponível
+  ansible.builtin.command: systemctl cat systemd-resolved
+  register: resolved_check
+  changed_when: false
+  failed_when: false
+
+- name: Habilitar e iniciar systemd-resolved (se disponível)
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    enabled: true
+    state: started
+  when: resolved_check.rc == 0
+
+- name: Garantir resolv.conf aponta para stub do systemd-resolved
+  ansible.builtin.file:
+    src: /run/systemd/resolve/stub-resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: true
+  when: resolved_check.rc == 0
+
+- name: Aguardar resolução de DNS voltar a funcionar
+  ansible.builtin.shell: getent hosts deb.debian.org
+  retries: 10
+  delay: 3
+  register: dns_check
+  until: dns_check.rc == 0
+  changed_when: false
+
+- name: Descobrir conexão ethernet ativa do tipo keyfile (modificável)
+  ansible.builtin.shell: |
+    nmcli -t -f NAME,TYPE connection show --active | grep 802-3-ethernet | awk -F: '{print $1}' | while IFS= read -r nome; do
+      case "$nome" in
+        Ifupdown*) continue ;;
+        *) printf '%s' "$nome"; break ;;
+      esac
+    done
+  register: nm_ethernet_conn
+  changed_when: false
+  when: nm_check.rc == 0
+
+- name: Configurar DNS fixo na interface cabeada (1.1.1.1 / 8.8.8.8)
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - modify
+      - "{{ nm_ethernet_conn.stdout }}"
+      - ipv4.ignore-auto-dns
+      - "yes"
+      - ipv4.dns
+      - "1.1.1.1 8.8.8.8"
+  when: nm_check.rc == 0 and nm_ethernet_conn.stdout | trim != ""

@@ -1,0 +1,9 @@
+---
+# Este role roda por ÚLTIMO no playbook, depois de tudo instalado.
+# Motivo: ativar o split-DNS do Tailscale (accept-dns=true) faz o resolv.conf
+# apontar para o MagicDNS (100.100.100.100), que só resolve a rede interna.
+# Se isso rodasse antes, quebraria os downloads de apt/deb/flatpak/extensões.
+# Por isso é a última ação do playbook.
+- name: Ativar split DNS do Tailscale (accept-dns=true)
+  ansible.builtin.command: tailscale set --accept-dns=true
+  changed_when: true

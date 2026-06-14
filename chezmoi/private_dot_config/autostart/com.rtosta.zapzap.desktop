@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=com.rtosta.zapzap
+X-XDP-Autostart=com.rtosta.zapzap
+Exec=flatpak run --command=zapzap com.rtosta.zapzap --hideStart
+X-Flatpak=com.rtosta.zapzap

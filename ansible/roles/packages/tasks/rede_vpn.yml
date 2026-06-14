@@ -1,0 +1,22 @@
+---
+- name: Instalar pacotes de rede e VPN
+  ansible.builtin.apt:
+    name:
+      - tailscale
+      - strongswan
+      - strongswan-charon
+      - strongswan-nm
+      - network-manager
+      - network-manager-gnome
+      - network-manager-strongswan
+      - nmap
+      - tcpdump
+      - openssh-server
+      - curl
+      - wget
+      - httpie
+      - rsync
+      - nftables
+      - bind9-dnsutils
+      - netcat-openbsd
+    state: present

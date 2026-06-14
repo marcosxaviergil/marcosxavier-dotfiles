@@ -1,0 +1,19 @@
+---
+- name: Adicionar repositório Flathub
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+    method: system
+
+- name: Instalar flatpaks
+  community.general.flatpak:
+    name:
+      - com.rtosta.zapzap
+      - com.spotify.Client
+      - com.steamgriddb.SGDBoop
+      - io.github.giantpinkrobots.varia
+      - org.jellyfin.JellyfinDesktop
+    state: present
+    remote: flathub
+    method: system

@@ -1,0 +1,52 @@
+#!/bin/bash
+# state-commit — re-add e commit local dos dotfiles
+# Chamado pelo timer semanal. Nunca faz push.
+# Uso manual: state-commit [mensagem opcional]
+
+set -uo pipefail
+
+STAMP_DIR="${HOME}/.local/state"
+STAMP_FILE="${STAMP_DIR}/state-commit.last"
+LOG_FILE="${STAMP_DIR}/state-commit.log"
+INTERVAL_DIAS=7
+WORK_TREE="$(chezmoi dump-config 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['workingTree'])")"
+MSG="${1:-auto: $(date '+%Y-%m-%d %H:%M')}"
+TIMER_MODE="${SYSTEMD_EXEC_PID:+1}"
+
+mkdir -p "$STAMP_DIR"
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
+
+if [ -n "$TIMER_MODE" ] && [ -f "$STAMP_FILE" ]; then
+    ultimo=$(cat "$STAMP_FILE")
+    agora=$(date +%s)
+    diff=$(( agora - ultimo ))
+    limite=$(( INTERVAL_DIAS * 86400 ))
+    if [ "$diff" -lt "$limite" ]; then
+        log "Último run há $(( diff / 86400 )) dia(s). Faltam $(( (limite - diff) / 86400 )) dia(s). Saindo."
+        exit 0
+    fi
+fi
+
+log "===== state-commit iniciado ====="
+
+log "[1/2] chezmoi re-add..."
+chezmoi re-add \
+    && log "      OK" \
+    || { log "      ERRO: chezmoi re-add falhou"; exit 1; }
+
+cd "$WORK_TREE"
+
+log "[2/2] git add + commit local..."
+git add -A
+if git diff --cached --quiet; then
+    log "      sem alterações para commitar"
+else
+    git commit -m "$MSG" \
+        && log "      OK: $MSG" \
+        || { log "      ERRO: commit falhou"; exit 1; }
+fi
+
+date +%s > "$STAMP_FILE"
+log "===== state-commit concluído ====="
+git log --oneline -3 | tee -a "$LOG_FILE"

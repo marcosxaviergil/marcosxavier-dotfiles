@@ -1,0 +1,29 @@
+#!/bin/bash
+# state-restore — restaura o sistema completo a partir do install.sh
+# Tenta GitHub primeiro, fallback para Forgejo se falhar.
+# Uso: state-restore
+
+set -uo pipefail
+
+GITHUB_URL="https://raw.githubusercontent.com/marcosxaviergil/marcosxavier-dotfiles/master/install.sh"
+FORGEJO_URL="https://forgejo.consciencia.dev.br/marcosxavier/marcosxavier-dotfiles/raw/branch/master/install.sh"
+
+echo "===== state-restore ====="
+echo
+
+echo "[1/2] Tentando GitHub..."
+if curl -fsSL --max-time 15 "$GITHUB_URL" -o /tmp/install.sh 2>/dev/null; then
+    echo "      OK: install.sh obtido do GitHub"
+else
+    echo "      GitHub indisponível. Tentando Forgejo..."
+    if curl -fsSL --max-time 15 "$FORGEJO_URL" -o /tmp/install.sh 2>/dev/null; then
+        echo "      OK: install.sh obtido do Forgejo"
+    else
+        echo "      ERRO: ambos GitHub e Forgejo indisponíveis. Abortando."
+        exit 1
+    fi
+fi
+
+echo
+echo "[2/2] Executando install.sh..."
+bash /tmp/install.sh

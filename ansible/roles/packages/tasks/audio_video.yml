@@ -1,0 +1,19 @@
+---
+- name: Instalar pacotes de áudio e vídeo
+  apt:
+    name:
+      - pipewire
+      - pipewire-alsa
+      - pipewire-pulse
+      - pipewire-jack
+      - pipewire-audio
+      - wireplumber
+      - easyeffects
+      - vlc
+      - mpv
+      - obs-studio
+      - ffmpeg
+      - playerctl
+      - pavucontrol
+      - lsp-plugins-lv2
+    state: present

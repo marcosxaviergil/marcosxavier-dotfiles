@@ -1,0 +1,11 @@
+---
+- name: Instalar firmware e drivers
+  apt:
+    name:
+      - firmware-linux-nonfree
+      - firmware-amd-graphics
+      - firmware-misc-nonfree
+      - amd64-microcode
+      - intel-microcode
+      - dkms
+    state: present

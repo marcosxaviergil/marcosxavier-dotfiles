@@ -1,0 +1,22 @@
+---
+- name: Instalar pacotes Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      - containerd.io
+      - docker-ctop
+      - cosign
+      - dive
+      - trivy
+      - bash-completion
+      - tzdata
+    state: present
+
+- name: Configurar Docker daemon
+  copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+  notify: restart docker

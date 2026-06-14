@@ -1,0 +1,57 @@
+---
+- name: Instalar pacotes de hardware e periféricos
+  apt:
+    name:
+      - logiops
+      - solaar
+      - liquidctl
+      - lm-sensors
+      - nvtop
+      - bluez
+      - bluetooth
+      - bluez-tools
+      - adb
+      - i2c-tools
+      - usbutils
+      - pciutils
+      - input-remapper
+      - v4l2loopback-dkms
+      - v4l-utils
+    state: present
+
+- name: Habilitar e iniciar logiops
+  systemd:
+    name: logid
+    enabled: true
+    state: started
+
+- name: Garantir que grupos necessários existam
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - input
+    - render
+    - video
+    - audio
+    - bluetooth
+    - plugdev
+    - netdev
+    - docker
+    - vboxusers
+
+- name: Adicionar usuário aos grupos necessários
+  user:
+    name: marcosxavier
+    groups:
+      - sudo
+      - input
+      - render
+      - video
+      - audio
+      - bluetooth
+      - plugdev
+      - netdev
+      - docker
+      - vboxusers
+    append: yes

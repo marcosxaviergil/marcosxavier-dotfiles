@@ -1,0 +1,19 @@
+#!/bin/bash
+# Aplica as configurações e ativa as extensões do GNOME via dconf.
+# Roda no chezmoi apply (com sessão de usuário e D-Bus ativos).
+# Re-executa automaticamente quando qualquer um dos dois arquivos muda:
+# extensions.dconf hash: {{ include "private_dot_local/private_share/gnome-shell/extensions.dconf" | sha256sum }}
+# enabled-extensions.dconf hash: {{ include "private_dot_local/private_share/gnome-shell/enabled-extensions.dconf" | sha256sum }}
+set -e
+
+# Só roda se houver sessão D-Bus (evita falhar quando aplicado via SSH/sem GUI)
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  echo "Sem sessão D-Bus — pulando aplicação do dconf das extensões GNOME."
+  echo "Rode 'chezmoi apply' dentro da sessão gráfica para ativar as extensões."
+  exit 0
+fi
+
+dconf load /org/gnome/shell/extensions/ < "$HOME/.local/share/gnome-shell/extensions.dconf"
+dconf load /org/gnome/shell/ < "$HOME/.local/share/gnome-shell/enabled-extensions.dconf"
+
+echo "Extensões GNOME aplicadas. Faça logout/login para o shell carregá-las."

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doublecmd>
+  <History>
+    <Navigation>
+      <Item>/mnt/nas/</Item>
+      <Item>/media/multimedia/</Item>
+      <Item>/</Item>
+      <Item>/bin/</Item>
+      <Item>/usr/</Item>
+      <Item>/usr/lib/</Item>
+      <Item>/usr/lib/doublecmd/</Item>
+    </Navigation>
+    <CommandLine/>
+    <FileMask/>
+    <VolumeSize/>
+    <CreateDirectories/>
+    <SearchText/>
+    <SearchTextPath/>
+    <ReplaceText/>
+    <ReplaceTextPath/>
+    <RenameNameMask/>
+    <RenameExtMask/>
+    <SearchDirectories/>
+    <SearchExcludeFiles/>
+    <SearchExcludeDirectories/>
+  </History>
+</doublecmd>

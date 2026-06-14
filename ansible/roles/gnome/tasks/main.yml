@@ -1,0 +1,69 @@
+---
+- name: Copiar gnome-shell-extension-installer
+  ansible.builtin.copy:
+    src: gnome-shell-extension-installer
+    dest: /usr/local/bin/gnome-shell-extension-installer
+    mode: "0755"
+
+- name: Instalar extensões GNOME via apt
+  # Instala todas as extensões que possuem pacote oficial no Debian/Trixie.
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - libglib2.0-bin
+      - gnome-shell-extension-blur-my-shell
+      - gnome-shell-extension-appindicator
+      - gnome-shell-extension-arc-menu
+      - gnome-shell-extension-dash-to-panel
+      - gnome-shell-extension-caffeine
+      - gnome-shell-extension-tiling-assistant
+      - gnome-shell-extension-vertical-workspaces
+    state: present
+  ignore_errors: true
+
+- name: Instalar extensões GNOME restantes via installer
+  become: false
+  ansible.builtin.command: gnome-shell-extension-installer --yes {{ item }}
+  loop:
+    - 6670   # Bluetooth-Battery-Meter@maniacx.github.com
+    - 6242   # emoji-copy@felipeftn
+    - 10076  # mediacontrols@cliffniff.github.com
+    - 6868   # screenshort-cut@pauloimon
+    - 1446   # transparent-window-moving@noobsai.github.com
+    - 7921   # draw-on-gnome@daveprowse.github.io
+  ignore_errors: true
+
+- name: Compilar schemas das extensões GNOME instaladas pelo usuário
+  become: false
+  ansible.builtin.shell: |
+    for d in ~/.local/share/gnome-shell/extensions/*/schemas; do
+      [ -d "$d" ] && glib-compile-schemas "$d"
+    done
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Copiar schemas compilados de extensões de usuário para /usr/share
+  become: true
+  ansible.builtin.shell: |
+    for ext in $(ls ~/.local/share/gnome-shell/extensions); do
+      user_schema="$HOME/.local/share/gnome-shell/extensions/$ext/schemas/gschemas.compiled"
+      sys_schema="/usr/share/gnome-shell/extensions/$ext/schemas/gschemas.compiled"
+      if [ -f "$user_schema" ]; then
+        mkdir -p "$(dirname "$sys_schema")"
+        cp "$user_schema" "$sys_schema" || true
+      fi
+    done
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Restaurar configurações das extensões GNOME
+  become: false
+  ansible.builtin.shell: |
+    if [ -f ~/.local/share/gnome-shell/extensions.dconf ]; then
+      dconf load /org/gnome/shell/extensions/ < ~/.local/share/gnome-shell/extensions.dconf
+      dconf load /org/gnome/shell/ < ~/.local/share/gnome-shell/enabled-extensions.dconf
+    fi
+  changed_when: false

@@ -1,0 +1,15 @@
+{
+  "openH264Enabled": true,
+  "offloadAdmControls": true,
+  "DESKTOP_TTI_UPDATE_BACKOFF_MAX_MS": 20000,
+  "chromiumSwitches": {},
+  "IS_MAXIMIZED": false,
+  "IS_MINIMIZED": false,
+  "BACKGROUND_COLOR": "#121214",
+  "WINDOW_BOUNDS": {
+    "x": 3841,
+    "y": 2,
+    "width": 1276,
+    "height": 1436
+  }
+}

@@ -1,0 +1,24 @@
+---
+- name: Atualizar cache apt
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  retries: 3
+  delay: 5
+  register: apt_update
+  until: apt_update is succeeded
+
+- import_tasks: desktop.yml
+- import_tasks: gaming.yml
+- import_tasks: docker.yml
+- import_tasks: desenvolvimento.yml
+- import_tasks: audio_video.yml
+- import_tasks: rede_vpn.yml
+- import_tasks: acesso_remoto.yml
+- import_tasks: seguranca.yml
+- import_tasks: armazenamento.yml
+- import_tasks: escritorio.yml
+- import_tasks: hardware.yml
+- import_tasks: terminal.yml
+- import_tasks: virtualizacao.yml
+- import_tasks: firmware.yml

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=io.github.giantpinkrobots.varia
+X-XDP-Autostart=io.github.giantpinkrobots.varia
+Exec=flatpak run io.github.giantpinkrobots.varia
+X-Flatpak=io.github.giantpinkrobots.varia

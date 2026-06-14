@@ -1,0 +1,32 @@
+---
+- name: Instalar pacotes de terminal e utilitários
+  apt:
+    name:
+      - terminator
+      - htop
+      - mc
+      - tree
+      - jq
+      - p7zip-full
+      - unrar
+      - unar
+      - xclip
+      - xdotool
+      - ydotool
+      - wmctrl
+      - nano
+      - vim
+      - rsync
+      - lshw
+      - stress-ng
+      - lz4
+      - zstd
+    state: present
+
+- name: Instalar utilitários adicionais
+  apt:
+    name:
+      - parted
+      - lshw
+      - stress-ng
+    state: present

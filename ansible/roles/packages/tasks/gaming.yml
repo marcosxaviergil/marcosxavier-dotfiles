@@ -1,0 +1,10 @@
+---
+- name: Instalar pacotes de gaming
+  apt:
+    name:
+      - steam-installer
+      - gamemode
+      - mangohud
+      - goverlay
+      - input-remapper
+    state: present

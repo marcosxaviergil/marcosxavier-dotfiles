@@ -1,0 +1,6 @@
+default partial alphanumeric_keys
+xkb_symbols "intl_cedilha" {
+    include "us(intl)"
+    name[Group1]= "English (US, intl., AltGr cedilha)";
+    key <AB03> { [ c, C, ccedilla, Ccedilla ] };
+};
