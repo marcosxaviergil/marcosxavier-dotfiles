@@ -13,7 +13,23 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
   exit 0
 fi
 
-dconf load /org/gnome/shell/extensions/ < "$HOME/.local/share/gnome-shell/extensions.dconf"
-dconf load /org/gnome/shell/ < "$HOME/.local/share/gnome-shell/enabled-extensions.dconf"
+DIR="$HOME/.local/share/gnome-shell"
+
+# O 'dconf load' exige que a entrada comece com um grupo '[/]'.
+# O state-push captura esses arquivos via re-add do que está no disco, e o
+# enabled-extensions pode vir sem o cabeçalho '[/]' (dump de chave única não o
+# inclui). Por isso garantimos o cabeçalho no momento do load, via pipe, sem
+# depender de como o arquivo foi salvo — corrige o processo, não o arquivo.
+load_dconf() {
+  local path="$1" file="$2"
+  if head -n1 "$file" | grep -q '^\[' ; then
+    dconf load "$path" < "$file"
+  else
+    { printf '[/]\n'; cat "$file"; } | dconf load "$path"
+  fi
+}
+
+load_dconf /org/gnome/shell/extensions/ "$DIR/extensions.dconf"
+load_dconf /org/gnome/shell/ "$DIR/enabled-extensions.dconf"
 
 echo "Extensões GNOME aplicadas. Faça logout/login para o shell carregá-las."
